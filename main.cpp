@@ -3,8 +3,6 @@
 #include <GL/glut.h>
 #include <glm/glm.hpp>
 
-#include <stdio.h>
-
 #include "draw.h"
 #include "planets.h"
 #include "sphere.h"
@@ -20,7 +18,7 @@
 const int W_WIDTH = 500;
 const int W_HEIGHT = 500;
 
-float cam_dist = 1.5;
+float cam_dist = 3.0;
 float cam_rot_alpha = 0;
 float cam_rot_beta = 0;
 
@@ -48,8 +46,8 @@ myCamara()
         case CAM_LIBRE:
                 cameraPosition =
                 glm::vec3(((float) cam_dist * (float) sin(cam_rot_alpha) * cos(cam_rot_beta)),
-                     ((float) cam_dist * (float) sin(cam_rot_beta)),
-                     ((float) cam_dist * cos(cam_rot_alpha) * cos(cam_rot_beta)));
+                          ((float) cam_dist * (float) sin(cam_rot_beta)),
+                          ((float) cam_dist * cos(cam_rot_alpha) * cos(cam_rot_beta)));
 
                 cameraTarget = glm::vec3(0, 0, 0);
                 cameraUp = glm::vec3(0, (cos(cam_rot_beta) >= 0 ? 1 : -1), 0);
