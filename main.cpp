@@ -1,6 +1,9 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/glut.h>
+#include <glm/glm.hpp>
+
+#include <stdio.h>
 
 #include "draw.h"
 #include "planets.h"
@@ -9,6 +12,11 @@
 #define CAM_ROT_INC 0.1
 #define PI 3.1416
 
+#define glHexColor(hex_color)                             \
+        glColor3f(((hex_color & 0xFF0000) >> 16) / 256.0, \
+                  ((hex_color & 0xFF00) >> 8) / 256.0, (hex_color & 0xFF) / 256.0);
+
+
 const int W_WIDTH = 500;
 const int W_HEIGHT = 500;
 
@@ -16,16 +24,56 @@ float cam_dist = 1.5;
 float cam_rot_alpha = 0;
 float cam_rot_beta = 0;
 
+enum TipoCamara {
+        CAM_LIBRE = 0,
+        CAM_LOOKAT_PLANET = 1,
+} tipo_camara;
+
+glm::vec3
+get_position(Planet p)
+{
+        return glm::vec3(p.modelviewMatrix[12], p.modelviewMatrix[13],
+                         p.modelviewMatrix[14]);
+}
+
+
 void
 myCamara()
 {
+        glm::vec3 cameraPosition;
+        glm::vec3 cameraTarget;
+        glm::vec3 cameraUp;
+
+        switch (tipo_camara) {
+        case CAM_LIBRE:
+                cameraPosition =
+                glm::vec3(((float) cam_dist * (float) sin(cam_rot_alpha) * cos(cam_rot_beta)),
+                     ((float) cam_dist * (float) sin(cam_rot_beta)),
+                     ((float) cam_dist * cos(cam_rot_alpha) * cos(cam_rot_beta)));
+
+                cameraTarget = glm::vec3(0, 0, 0);
+                cameraUp = glm::vec3(0, (cos(cam_rot_beta) >= 0 ? 1 : -1), 0);
+                break;
+
+        case CAM_LOOKAT_PLANET:
+
+                /* FROM (earth) */
+                cameraPosition = get_position(earth);
+                /* TO (marte) */
+                cameraTarget = get_position(marte);
+
+                cameraUp = glm::vec3(0, (cos(cam_rot_beta) >= 0 ? 1 : -1), 0);
+                break;
+        }
+
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        glOrtho(-cam_dist, cam_dist, -cam_dist, cam_dist, -10 * cam_dist, 10 * cam_dist);
-        gluLookAt(((float) cam_dist * (float) sin(cam_rot_alpha) * cos(cam_rot_beta)),
-                  ((float) cam_dist * (float) sin(cam_rot_beta)),
-                  ((float) cam_dist * cos(cam_rot_alpha) * cos(cam_rot_beta)),
-                  0, 0, 0, 0, (cos(cam_rot_beta) >= 0 ? 1 : -1), 0);
+        gluPerspective(45.0, (float) W_WIDTH / W_HEIGHT, 0.1, 100.0);
+        gluLookAt(cameraPosition.x, cameraPosition.y, cameraPosition.z,
+                  cameraTarget.x, cameraTarget.y, cameraTarget.z, cameraUp.x,
+                  cameraUp.y, cameraUp.z);
+
+        glMatrixMode(GL_MODELVIEW);
 }
 
 void
@@ -37,6 +85,12 @@ myTeclado(unsigned char tras, int x, int y)
                 break;
         case 'k':
                 cam_dist -= 0.1;
+                break;
+        case 'c':
+                if (tipo_camara == CAM_LIBRE)
+                        tipo_camara = CAM_LOOKAT_PLANET;
+                else if (tipo_camara == CAM_LOOKAT_PLANET)
+                        tipo_camara = CAM_LIBRE;
                 break;
         case 27:
                 exit(0);
@@ -76,10 +130,6 @@ myTeclasespeciales(int cursor, int x, int y)
         glutPostRedisplay();
 }
 
-#define glHexColor(hex_color)                             \
-        glColor3f(((hex_color & 0xFF0000) >> 16) / 256.0, \
-                  ((hex_color & 0xFF00) >> 8) / 256.0, (hex_color & 0xFF) / 256.0);
-
 void
 displayObject(Planet *o)
 {
@@ -103,6 +153,8 @@ displayObject(Planet *o)
         glTranslatef(0.0f, o->sun_distance, 0.0f);
         glRotatef(o->rotation_angle, 0.0f, 0.0f, 1.0f);
 
+        glGetFloatv(GL_MODELVIEW_MATRIX, o->modelviewMatrix);
+
         /* If custom draw funtion is null, use myEsfera */
         if (o->draw)
                 o->draw(o->size);
@@ -115,6 +167,12 @@ displayObject(Planet *o)
         }
 
         glPopMatrix();
+}
+
+void
+idle()
+{
+        glutPostRedisplay();
 }
 
 // Función de display
@@ -159,7 +217,7 @@ main(int argc, char **argv)
         glutDisplayFunc(Display);
 
         /* Criminal esto pero sin la idle function no me tira */
-        glutIdleFunc(Display);
+        glutIdleFunc(idle);
 
         glutKeyboardFunc(myTeclado);
         glutSpecialFunc(myTeclasespeciales);

@@ -1,3 +1,4 @@
+#include <GL/gl.h>
 #include <stddef.h>
 #include <time.h>
 #include <stdlib.h>
@@ -19,6 +20,7 @@ typedef struct Planet {
         struct Planet **attached_planet;
         size_t attached_planet_n;
         void (*draw)(float scale);
+        GLfloat modelviewMatrix[16];
 } Planet;
 
 Planet moon = (Planet) {
