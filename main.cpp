@@ -214,7 +214,6 @@ main(int argc, char **argv)
 
         glutDisplayFunc(Display);
 
-        /* Criminal esto pero sin la idle function no me tira */
         glutIdleFunc(idle);
 
         glutKeyboardFunc(myTeclado);
